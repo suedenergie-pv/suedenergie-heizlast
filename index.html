@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#e8603a">
+<title>SüdEnergie Heizlastrechner</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#f4f6f8; --card:#ffffff; --border:#e5e7eb;
+  --text:#111827; --muted:#6b7280;
+  --orange:#e8603a; --orange-d:#c94e2a; --orange-l:#fff4ee; --orange-m:#fde0d0;
+  --green:#10b981; --green-l:#d1fae5; --blue:#3b82f6; --blue-l:#dbeafe;
+  --red:#ef4444; --red-l:#fee2e2; --amber:#f59e0b; --amber-l:#fef3c7;
+  --r:12px; --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Inter,'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding:1rem;padding-bottom:7rem;
+}
+@media(min-width:768px){body{padding:1.5rem;padding-bottom:1.5rem}}
+
+.wrap{max-width:1100px;margin:0 auto}
+
+/* Header */
+header{
+  display:flex;align-items:center;gap:1rem;
+  margin-bottom:1rem;flex-wrap:wrap;
+}
+header img{height:44px;width:auto}
+header .ttl{margin-left:auto;text-align:right}
+header .ttl h1{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
+header .ttl p{font-size:.8rem;color:var(--muted)}
+.brand-fallback{
+  height:44px;display:flex;align-items:center;font-weight:800;
+  font-size:1.1rem;color:var(--orange);letter-spacing:-.02em;
+}
+
+/* Disclaimer */
+.disclaimer{
+  background:var(--orange-l);border:1px solid var(--orange-m);
+  border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1.25rem;
+  font-size:.82rem;color:#7c2d12;display:flex;gap:.6rem;align-items:flex-start;
+}
+.disclaimer svg{flex:0 0 auto;margin-top:1px}
+.disclaimer b{color:var(--orange-d)}
+
+/* Grid layout */
+.grid{display:grid;grid-template-columns:1fr;gap:1.25rem}
+@media(min-width:768px){.grid{grid-template-columns:1fr 380px;align-items:start}}
+
+.col-results{order:0}
+@media(min-width:768px){
+  .col-inputs{order:0}
+  .col-results{order:1;position:sticky;top:1rem}
+}
+
+/* Cards */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--shadow);padding:1.5rem;
+  margin-bottom:1.25rem;
+}
+.card:last-child{margin-bottom:0}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem}
+.card .sub{font-size:.78rem;color:var(--muted);margin-bottom:1.1rem}
+.tag{font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;text-transform:uppercase;letter-spacing:.03em}
+.tag.a{background:var(--blue-l);color:#1e40af}
+.tag.b{background:var(--orange-l);color:var(--orange-d)}
+
+/* Form fields */
+.field{margin-bottom:1.1rem}
+.field:last-child{margin-bottom:0}
+.field > label{display:block;font-size:.82rem;font-weight:600;margin-bottom:.4rem;color:var(--text)}
+.field .hint{font-size:.72rem;color:var(--muted);margin-top:.35rem}
+
+input[type=number],select{
+  width:100%;font:inherit;font-size:1rem;
+  padding:.7rem .85rem;min-height:44px;
+  border:1px solid var(--border);border-radius:10px;
+  background:#fff;color:var(--text);
+  -webkit-appearance:none;appearance:none;
+}
+select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;background-position:right .85rem center;padding-right:2.2rem;
+}
+input:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px var(--orange-l)}
+
+/* EFH/MFH + WW segmented toggle */
+.seg{display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#f9fafb}
+.seg button{
+  flex:1;font:inherit;font-size:.9rem;font-weight:600;
+  min-height:44px;border:none;background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .12s;
+}
+.seg button.on{background:var(--orange);color:#fff}
+
+/* Sanierung chips */
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font:inherit;font-size:.88rem;font-weight:600;
+  min-height:44px;padding:.5rem .9rem;
+  border:1.5px solid var(--border);border-radius:10px;
+  background:#fff;color:var(--text);cursor:pointer;
+  user-select:none;transition:all .12s;
+}
+.chip .pct{font-size:.72rem;color:var(--muted);font-weight:600}
+.chip.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.chip.on .pct{color:rgba(255,255,255,.85)}
+.chip[aria-disabled=true]{opacity:.4;pointer-events:none}
+
+.checkrow{display:flex;align-items:center;gap:.6rem;min-height:44px;cursor:pointer;user-select:none}
+.checkrow input{width:20px;height:20px;accent-color:var(--orange);flex:0 0 auto}
+.checkrow span{font-size:.9rem;font-weight:600}
+
+/* Collapsible Anbau */
+.collapse{border:1px dashed var(--border);border-radius:10px;overflow:hidden}
+.collapse > summary{
+  list-style:none;cursor:pointer;padding:.8rem 1rem;min-height:44px;
+  display:flex;align-items:center;gap:.5rem;font-size:.88rem;font-weight:600;color:var(--text);
+}
+.collapse > summary::-webkit-details-marker{display:none}
+.collapse > summary .ico{transition:transform .15s;color:var(--muted)}
+.collapse[open] > summary .ico{transform:rotate(45deg)}
+.collapse .body{padding:0 1rem 1rem}
+
+/* KPI tiles */
+.results-title{font-size:1rem;font-weight:700;margin-bottom:1rem}
+.kpis{display:grid;grid-template-columns:1fr;gap:.85rem}
+.kpi{
+  border:1px solid var(--border);border-radius:var(--r);
+  padding:1rem;display:flex;align-items:center;gap:.85rem;background:#fff;
+}
+.kpi .tile{
+  width:42px;height:42px;border-radius:10px;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+}
+.kpi .tile.a{background:var(--blue-l);color:var(--blue)}
+.kpi .tile.b{background:var(--orange-l);color:var(--orange)}
+.kpi .tile.g{background:var(--green-l);color:var(--green)}
+.kpi .lbl{font-size:.72rem;color:var(--muted);font-weight:600}
+.kpi .val{font-size:1.45rem;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+.kpi .val small{font-size:.85rem;font-weight:600;color:var(--muted)}
+.kpi .sublbl{font-size:.72rem;color:var(--muted)}
+
+/* Auslegung accent card */
+.kpi.accent{
+  border-top:4px solid var(--orange);
+  background:linear-gradient(180deg,#fff4ee 0%,#fffdf9 50%,white 100%);
+}
+.soft-mean{font-size:.74rem;color:var(--green);font-weight:700;margin-top:.15rem}
+
+/* Warning card */
+.warn{
+  background:var(--amber-l);border:1px solid var(--amber);
+  border-radius:var(--r);padding:1rem;margin-top:.85rem;
+  font-size:.82rem;color:#78350f;display:flex;gap:.6rem;align-items:flex-start;
+}
+.warn svg{flex:0 0 auto;color:var(--amber);margin-top:1px}
+.warn .em{font-weight:700}
+
+.empty{font-size:.85rem;color:var(--muted);text-align:center;padding:1rem 0}
+
+/* Mobile sticky result bar */
+.sticky-bar{display:none}
+@media(max-width:767px){
+  .col-results{display:none}
+  .sticky-bar{
+    display:block;position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:#fff;border-top:1px solid var(--border);
+    box-shadow:0 -4px 16px rgba(0,0,0,.08);
+    padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+  }
+  .sticky-bar summary{
+    list-style:none;cursor:pointer;display:flex;align-items:center;gap:.75rem;
+  }
+  .sticky-bar summary::-webkit-details-marker{display:none}
+  .sticky-bar .mini{display:flex;gap:1.1rem;flex:1;min-width:0}
+  .sticky-bar .mini .m{display:flex;flex-direction:column}
+  .sticky-bar .mini .m .l{font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .sticky-bar .mini .m .v{font-size:1.05rem;font-weight:700}
+  .sticky-bar .mini .m.g .v{color:var(--green)}
+  .sticky-bar .chev{color:var(--muted);transition:transform .15s;flex:0 0 auto}
+  .sticky-bar[open] .chev{transform:rotate(180deg)}
+  .sticky-bar .expand{padding-top:.85rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <img src="suedenergie-logo.png" alt="SüdEnergie" onerror="this.outerHTML='<div class=brand-fallback>SüdEnergie</div>'">
+    <div class="ttl">
+      <h1>Heizlastrechner</h1>
+      <p>Überschlägige Ermittlung · 2 Methoden</p>
+    </div>
+  </header>
+
+  <div class="disclaimer">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <div>Orientierung für Angebot und Vorplanung. Verbindlich ist die raumweise Heizlastberechnung nach <b>DIN EN 12831</b> durch eine Fachkraft – Voraussetzung für BAFA/BEG-Förderung.</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ===== INPUTS ===== -->
+    <div class="col-inputs">
+
+      <!-- Gemeinsame Eingaben -->
+      <div class="card">
+        <h2>Gebäude</h2>
+        <p class="sub">Gemeinsame Angaben für beide Methoden</p>
+
+        <div class="field">
+          <label>Gebäudetyp</label>
+          <div class="seg" id="seg-typ">
+            <button type="button" data-val="EFH" class="on">EFH</button>
+            <button type="button" data-val="MFH">MFH</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="baujahr">Baujahr-Klasse</label>
+          <select id="baujahr"></select>
+        </div>
+
+        <div class="field">
+          <label for="flaeche">Wohnfläche (m²)</label>
+          <input type="number" id="flaeche" inputmode="numeric" min="0" placeholder="z. B. 140">
+        </div>
+      </div>
+
+      <!-- Methode A -->
+      <div class="card">
+        <h2><span class="tag a">A</span> Fläche</h2>
+        <p class="sub">Faustwert nach Baujahr & Sanierungsstand</p>
+
+        <div class="field">
+          <label>Durchgeführte Sanierungen</label>
+          <div class="chips" id="chips-san">
+            <div class="chip" data-san="fenster" role="button" tabindex="0">Fenster <span class="pct">−10 %</span></div>
+            <div class="chip" data-san="dach" role="button" tabindex="0">Dach <span class="pct">−15 %</span></div>
+            <div class="chip" data-san="fassade" role="button" tabindex="0">Fassade <span class="pct">−20 %</span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="checkrow">
+            <input type="checkbox" id="vollsaniert">
+            <span>Vollständig saniert (→ fester Wert 50 W/m²)</span>
+          </label>
+        </div>
+
+        <details class="collapse" id="anbau-wrap">
+          <summary><span class="ico">＋</span> Zweiter Gebäudeteil / Anbau</summary>
+          <div class="body">
+            <div class="field">
+              <label for="a2-flaeche">Fläche Anbau (m²)</label>
+              <input type="number" id="a2-flaeche" inputmode="numeric" min="0" placeholder="z. B. 40">
+            </div>
+            <div class="field">
+              <label for="a2-baujahr">Baujahr-Klasse Anbau</label>
+              <select id="a2-baujahr"></select>
+            </div>
+            <div class="field">
+              <label>Sanierungen Anbau</label>
+              <div class="chips" id="a2-chips-san">
+                <div class="chip" data-san="fenster" role="button" tabindex="0">Fenster <span class="pct">−10 %</span></div>
+                <div class="chip" data-san="dach" role="button" tabindex="0">Dach <span class="pct">−15 %</span></div>
+                <div class="chip" data-san="fassade" role="button" tabindex="0">Fassade <span class="pct">−20 %</span></div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="checkrow">
+                <input type="checkbox" id="a2-vollsaniert">
+                <span>Anbau vollständig saniert</span>
+              </label>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Methode B -->
+      <div class="card">
+        <h2><span class="tag b">B</span> Verbrauch</h2>
+        <p class="sub">Aus realem Jahresenergieverbrauch</p>
+
+        <div class="field">
+          <label for="brennstoff">Brennstoff</label>
+          <select id="brennstoff">
+            <option value="heizoel_l">Heizöl (Liter)</option>
+            <option value="erdgas_m3">Erdgas (m³)</option>
+            <option value="kwh">Erdgas / Wärme (kWh)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="menge">Jahresverbrauch</label>
+          <input type="number" id="menge" inputmode="numeric" min="0" placeholder="z. B. 16.000">
+        </div>
+
+        <div class="field">
+          <label>Heizung erzeugt auch Warmwasser?</label>
+          <div class="seg" id="seg-ww">
+            <button type="button" data-val="1" class="on">Ja</button>
+            <button type="button" data-val="0">Nein</button>
+          </div>
+          <p class="hint">η = 0,90 fest angesetzt (inkl. ~10 % Erzeugerverluste).</p>
+        </div>
+      </div>
+
+    </div><!-- /col-inputs -->
+
+    <!-- ===== RESULTS (Desktop sticky) ===== -->
+    <div class="col-results">
+      <div class="card">
+        <div class="results-title">Ergebnis</div>
+        <div id="kpis-desktop" class="kpis"></div>
+        <div id="warn-desktop"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Mobile sticky bar -->
+<details class="sticky-bar" id="sticky">
+  <summary>
+    <div class="mini" id="mini"></div>
+    <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg>
+  </summary>
+  <div class="expand">
+    <div id="kpis-mobile" class="kpis"></div>
+    <div id="warn-mobile"></div>
+  </div>
+</details>
+
+<script>
+/* ===================== Daten ===================== */
+const BAUJAHR = [
+  { key:'bis_1977',    label:'bis 1977 (unsaniert)' },
+  { key:'1978_1983',   label:'1978–1983 (1. WSchVO)' },
+  { key:'1984_1994',   label:'1984–1994 (2. WSchVO)' },
+  { key:'1995_2001',   label:'1995–2001 (3. WSchVO)' },
+  { key:'ab_2002',     label:'ab 2002 (EnEV/GEG)' },
+  { key:'neubau',      label:'Neubau / KfW-EH / vollsaniert' },
+];
+
+const WM2 = { bis_1977:120, '1978_1983':100, '1984_1994':80, '1995_2001':65, ab_2002:50, neubau:40 };
+const ABZUG = { fenster:0.10, dach:0.15, fassade:0.20 };
+
+const FUEL = { heizoel_l:10, erdgas_m3:10, kwh:1 };
+const ETA  = 0.90;
+const VBH = {
+  EFH:{
+    bis_1977:   {mitWW:2100, nurHeizung:1800},
+    '1978_1983':{mitWW:2075, nurHeizung:1775},
+    '1984_1994':{mitWW:2050, nurHeizung:1750},
+    '1995_2001':{mitWW:2000, nurHeizung:1700},
+    ab_2002:    {mitWW:1950, nurHeizung:1650},
+    neubau:     {mitWW:1900, nurHeizung:1600},
+  },
+  MFH:{
+    bis_1977:   {mitWW:1950, nurHeizung:1700},
+    '1978_1983':{mitWW:1925, nurHeizung:1675},
+    '1984_1994':{mitWW:1900, nurHeizung:1650},
+    '1995_2001':{mitWW:1850, nurHeizung:1600},
+    ab_2002:    {mitWW:1800, nurHeizung:1550},
+    neubau:     {mitWW:1750, nurHeizung:1500},
+  }
+};
+const SCHWELLE = 0.20;
+
+/* ===================== Rechenlogik ===================== */
+function heizlastA({ baujahr, flaeche, fenster, dach, fassade, vollsaniert }){
+  const basis = WM2[baujahr];
+  let wert;
+  if (vollsaniert) {
+    wert = Math.min(50, basis);
+  } else {
+    let abzug = (fenster?ABZUG.fenster:0) + (dach?ABZUG.dach:0) + (fassade?ABZUG.fassade:0);
+    abzug = Math.min(abzug, 0.45);            // max. 45 %
+    wert = basis * (1 - abzug);
+  }
+  return Math.max(0, flaeche * wert / 1000);  // kW
+}
+function heizlastB({ gebaeudetyp, baujahr, brennstoff, menge, machtWarmwasser }){
+  const kwh = menge * FUEL[brennstoff];
+  const vbh = VBH[gebaeudetyp][baujahr][machtWarmwasser ? 'mitWW' : 'nurHeizung'];
+  return Math.max(0, kwh * ETA / vbh);        // kW
+}
+function divergenz(A, B){ return Math.abs(A - B) / Math.max(A, B); }
+
+/* ===================== Helper ===================== */
+function parseNum(raw){
+  if (raw == null) return NaN;
+  let s = String(raw).trim().replace(/\s/g,'');
+  if (!s) return NaN;
+  if (s.includes(',') && s.includes('.')) {       // 16.000,5 → 16000.5
+    s = s.replace(/\./g,'').replace(',', '.');
+  } else if (s.includes(',')) {                   // 8,4 → 8.4
+    s = s.replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {      // 16.000 → 16000 (Tausenderpunkt)
+    s = s.replace(/\./g,'');
+  }
+  const n = parseFloat(s);
+  return isFinite(n) ? n : NaN;
+}
+const fmt = n => n.toFixed(1).replace('.', ',');
+
+/* ===================== State ===================== */
+const S = {
+  gebaeudetyp:'EFH', baujahr:'bis_1977', flaeche:NaN,
+  san:{fenster:false,dach:false,fassade:false}, vollsaniert:false,
+  anbauOpen:false, a2:{flaeche:NaN, baujahr:'bis_1977', san:{fenster:false,dach:false,fassade:false}, vollsaniert:false},
+  brennstoff:'heizoel_l', menge:NaN, machtWarmwasser:true,
+};
+
+/* ===================== Init UI ===================== */
+function fillSelect(el){
+  el.innerHTML = BAUJAHR.map(b=>`<option value="${b.key}">${b.label}</option>`).join('');
+}
+fillSelect(document.getElementById('baujahr'));
+fillSelect(document.getElementById('a2-baujahr'));
+
+// Gebäudetyp toggle
+document.querySelectorAll('#seg-typ button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#seg-typ button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); S.gebaeudetyp=b.dataset.val; render();
+  });
+});
+// WW toggle
+document.querySelectorAll('#seg-ww button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#seg-ww button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); S.machtWarmwasser = b.dataset.val==='1'; render();
+  });
+});
+
+document.getElementById('baujahr').addEventListener('change', e=>{S.baujahr=e.target.value; render();});
+document.getElementById('flaeche').addEventListener('input', e=>{S.flaeche=parseNum(e.target.value); render();});
+document.getElementById('brennstoff').addEventListener('change', e=>{S.brennstoff=e.target.value; render();});
+document.getElementById('menge').addEventListener('input', e=>{S.menge=parseNum(e.target.value); render();});
+
+// Sanierungs-Chips (Haupt)
+function wireChips(containerId, store, vollChkId){
+  document.querySelectorAll('#'+containerId+' .chip').forEach(chip=>{
+    const toggle = ()=>{
+      if (chip.getAttribute('aria-disabled')==='true') return;
+      const k = chip.dataset.san;
+      store.san[k] = !store.san[k];
+      chip.classList.toggle('on', store.san[k]);
+      render();
+    };
+    chip.addEventListener('click', toggle);
+    chip.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault(); toggle();} });
+  });
+  document.getElementById(vollChkId).addEventListener('change', e=>{
+    store.vollsaniert = e.target.checked;
+    // Einzel-Chips sperren wenn vollsaniert
+    document.querySelectorAll('#'+containerId+' .chip').forEach(c=>{
+      c.setAttribute('aria-disabled', String(store.vollsaniert));
+    });
+    render();
+  });
+}
+wireChips('chips-san', S, 'vollsaniert');
+wireChips('a2-chips-san', S.a2, 'a2-vollsaniert');
+
+document.getElementById('a2-flaeche').addEventListener('input', e=>{S.a2.flaeche=parseNum(e.target.value); render();});
+document.getElementById('a2-baujahr').addEventListener('change', e=>{S.a2.baujahr=e.target.value; render();});
+document.getElementById('anbau-wrap').addEventListener('toggle', e=>{S.anbauOpen=e.target.open; render();});
+
+/* ===================== Render ===================== */
+const ICON = {
+  a:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01"/></svg>',
+  b:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+  g:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>',
+};
+
+function kpiHTML(cls, label, value, unit, sub, extra){
+  return `<div class="kpi ${cls==='accent'?'accent':''}">
+    <div class="tile ${cls==='accent'?'g':cls}">${ICON[cls==='accent'?'g':cls]}</div>
+    <div>
+      <div class="lbl">${label}</div>
+      <div class="val">${value}${unit?` <small>${unit}</small>`:''}</div>
+      ${sub?`<div class="sublbl">${sub}</div>`:''}
+      ${extra||''}
+    </div>
+  </div>`;
+}
+
+function warnHTML(A, B){
+  const bKleiner = B < A;
+  const txt = bKleiner
+    ? `Der Verbrauch (B) liegt klar <span class="em">unter</span> dem Flächenwert. Häufigste Ursache: <span class="em">Kachel-/Kaminofen oder andere Zusatzheizung</span> (verbrennt Holz → taucht nicht in der Öl-/Gasrechnung auf), nur teilbeheiztes Haus oder Leerstand. Verbrauch und Zusatzheizung beim Kunden prüfen.`
+    : `Der Verbrauch (B) liegt klar <span class="em">über</span> dem Flächenwert. Mögliche Ursachen: ungewöhnlich hoher Verbrauch (Übertemperatur, altes Heizverhalten), hoher Warmwasserbedarf, falsches Verbrauchsjahr oder unterschätzter Dämmstandard. Eingaben prüfen.`;
+  return `<div class="warn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+    <div>⚠️ ${txt}</div>
+  </div>`;
+}
+
+function compute(){
+  // Methode A
+  let A = null;
+  if (S.flaeche > 0) {
+    A = heizlastA({ baujahr:S.baujahr, flaeche:S.flaeche, ...S.san, vollsaniert:S.vollsaniert });
+    if (S.anbauOpen && S.a2.flaeche > 0) {
+      A += heizlastA({ baujahr:S.a2.baujahr, flaeche:S.a2.flaeche, ...S.a2.san, vollsaniert:S.a2.vollsaniert });
+    }
+  }
+  // Methode B
+  let B = null;
+  if (S.menge > 0) {
+    B = heizlastB({ gebaeudetyp:S.gebaeudetyp, baujahr:S.baujahr, brennstoff:S.brennstoff, menge:S.menge, machtWarmwasser:S.machtWarmwasser });
+  }
+  return { A, B };
+}
+
+function render(){
+  const { A, B } = compute();
+  let kpis = '';
+
+  if (A != null) kpis += kpiHTML('a', 'Methode A · Fläche', fmt(A), 'kW', 'Faustwert nach Baujahr & Sanierung');
+  if (B != null) kpis += kpiHTML('b', 'Methode B · Verbrauch', fmt(B), 'kW', 'aus realem Jahresverbrauch');
+
+  // Auslegung
+  if (A != null || B != null) {
+    const vals = [A, B].filter(v=>v!=null);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    let val, extra='';
+    if (A != null && B != null) {
+      val = (Math.abs(mn-mx) < 0.05) ? fmt(mn) : `${fmt(mn)}–${fmt(mx)}`;
+      if (divergenz(A,B) < SCHWELLE) {
+        extra = `<div class="soft-mean">✓ plausibel · Vorschlag ⌀ ${fmt((A+B)/2)} kW</div>`;
+      }
+    } else {
+      val = fmt(vals[0]);
+    }
+    kpis += kpiHTML('accent', 'Auslegung (Orientierung)', val, 'kW', null, extra);
+  }
+
+  if (!kpis) kpis = '<div class="empty">Wohnfläche oder Jahresverbrauch eingeben, um die Heizlast zu berechnen.</div>';
+
+  // Warnung
+  let warn = '';
+  if (A != null && B != null && divergenz(A,B) > SCHWELLE) warn = warnHTML(A, B);
+
+  document.getElementById('kpis-desktop').innerHTML = kpis;
+  document.getElementById('kpis-mobile').innerHTML = kpis;
+  document.getElementById('warn-desktop').innerHTML = warn;
+  document.getElementById('warn-mobile').innerHTML = warn;
+
+  // Mobile mini-bar
+  let mini = '';
+  if (A != null) mini += `<div class="m"><span class="l">A Fläche</span><span class="v">${fmt(A)} kW</span></div>`;
+  if (B != null) mini += `<div class="m"><span class="l">B Verbr.</span><span class="v">${fmt(B)} kW</span></div>`;
+  if (A != null || B != null) {
+    const vals=[A,B].filter(v=>v!=null); const mn=Math.min(...vals), mx=Math.max(...vals);
+    const av = (A!=null&&B!=null && Math.abs(mn-mx)>=0.05) ? `${fmt(mn)}–${fmt(mx)}` : fmt(mn);
+    mini += `<div class="m g"><span class="l">Auslegung</span><span class="v">${av} kW</span></div>`;
+  }
+  if (!mini) mini = `<div class="m"><span class="l">Auslegung</span><span class="v">– kW</span></div>`;
+  document.getElementById('mini').innerHTML = mini;
+}
+
+render();
+
+/* ===================== PWA ===================== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
