@@ -49,6 +49,8 @@ header .ttl{margin-left:auto;text-align:right}
 }
 .install-btn:hover{background:var(--orange-m)}
 .install-btn.show{display:inline-flex}
+/* Installieren-Button nur auf Mobil, nie auf Desktop/Tablet quer */
+@media(min-width:768px){.install-btn,.install-btn.show{display:none !important}}
 header .ttl h1{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
 header .ttl p{font-size:.8rem;color:var(--muted)}
 .brand-fallback{
