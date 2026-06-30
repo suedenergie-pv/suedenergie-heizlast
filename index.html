@@ -307,14 +307,9 @@ input:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 
         </div>
 
         <div class="field">
-          <label>Warmwasser-Bereitung</label>
-          <div class="seg" id="seg-ww">
-            <button type="button" data-val="0" class="on">über dieselbe Heizung</button>
-            <button type="button" data-val="1">separat</button>
-          </div>
-          <p class="hint">„separat" = elektr. Durchlauferhitzer/Boiler, Solar oder Fernwärme – das Warmwasser läuft <b>nicht</b> über die Öl-/Gasheizung.</p>
-          <p class="hint">Die Heizlast hängt nie vom Warmwasser ab. Die Angabe sagt dem Rechner nur, ob im Brennstoffverbrauch schon Warmwasser steckt, das er herausrechnen muss.</p>
+          <p class="hint">Warmwasser ist im Jahresverbrauch enthalten und bereits berücksichtigt.</p>
           <p class="hint">η = 0,90 fest angesetzt (inkl. ~10 % Erzeugerverluste).</p>
+          <p class="hint">Bei separater Warmwasserbereitung (elektr. Durchlauferhitzer/Solar) Ergebnis als Untergrenze sehen; für die Auslegung DIN-EN-12831-Berechnung.</p>
         </div>
       </div>
 
@@ -360,25 +355,11 @@ const ABZUG = { fenster:0.10, dach:0.15, fassade:0.20 };
 
 const FUEL = { heizoel_l:10, erdgas_m3:10, kwh:1 };
 const ETA  = 0.90;
-// heizungWW = Verbrauch enthält Warmwasser (Normalfall) → WW wird über höhere Vbh rausgerechnet.
-// separat   = Warmwasser läuft NICHT über die Öl-/Gasheizung → Verbrauch ist reine Heizung.
+// Vollbenutzungsstunden (h/a), Richtwerte (VDI 4640 / ELCO / DIN-TS).
+// Einzelwert: Warmwasser ist eingerechnet (Verbrauch von der Abrechnung enthält WW = Normalfall).
 const VBH = {
-  EFH:{
-    bis_1977:   {heizungWW:2100, separat:1800},
-    '1978_1983':{heizungWW:2075, separat:1775},
-    '1984_1994':{heizungWW:2050, separat:1750},
-    '1995_2001':{heizungWW:2000, separat:1700},
-    ab_2002:    {heizungWW:1950, separat:1650},
-    neubau:     {heizungWW:1900, separat:1600},
-  },
-  MFH:{
-    bis_1977:   {heizungWW:1950, separat:1700},
-    '1978_1983':{heizungWW:1925, separat:1675},
-    '1984_1994':{heizungWW:1900, separat:1650},
-    '1995_2001':{heizungWW:1850, separat:1600},
-    ab_2002:    {heizungWW:1800, separat:1550},
-    neubau:     {heizungWW:1750, separat:1500},
-  }
+  EFH:{ bis_1977:2100, '1978_1983':2075, '1984_1994':2050, '1995_2001':2000, ab_2002:1950, neubau:1900 },
+  MFH:{ bis_1977:1950, '1978_1983':1925, '1984_1994':1900, '1995_2001':1850, ab_2002:1800, neubau:1750 },
 };
 const SCHWELLE = 0.20;
 
@@ -395,10 +376,9 @@ function heizlastA({ baujahr, flaeche, fenster, dach, fassade, vollsaniert }){
   }
   return Math.max(0, flaeche * wert / 1000);  // kW
 }
-// wwSeparat = true → Warmwasser separat (Durchlauferhitzer etc.) → Verbrauch ist reine Heizung
-function heizlastB({ gebaeudetyp, baujahr, brennstoff, menge, wwSeparat }){
+function heizlastB({ gebaeudetyp, baujahr, brennstoff, menge }){
   const kwh = menge * FUEL[brennstoff];
-  const vbh = VBH[gebaeudetyp][baujahr][wwSeparat ? 'separat' : 'heizungWW'];
+  const vbh = VBH[gebaeudetyp][baujahr];
   return Math.max(0, kwh * ETA / vbh);        // kW
 }
 function divergenz(A, B){ return Math.abs(A - B) / Math.max(A, B); }
@@ -425,7 +405,7 @@ const S = {
   gebaeudetyp:'EFH', baujahr:'bis_1977', flaeche:NaN,
   san:{fenster:false,dach:false,fassade:false}, vollsaniert:false,
   anbauOpen:false, a2:{flaeche:NaN, baujahr:'bis_1977', san:{fenster:false,dach:false,fassade:false}, vollsaniert:false},
-  brennstoff:'heizoel_l', menge:NaN, wwSeparat:false,
+  brennstoff:'heizoel_l', menge:NaN,
 };
 
 /* ===================== Init UI ===================== */
@@ -440,13 +420,6 @@ document.querySelectorAll('#seg-typ button').forEach(b=>{
   b.addEventListener('click', ()=>{
     document.querySelectorAll('#seg-typ button').forEach(x=>x.classList.remove('on'));
     b.classList.add('on'); S.gebaeudetyp=b.dataset.val; render();
-  });
-});
-// WW toggle (separat = Warmwasser läuft NICHT über die Öl-/Gasheizung)
-document.querySelectorAll('#seg-ww button').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    document.querySelectorAll('#seg-ww button').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on'); S.wwSeparat = b.dataset.val==='1'; render();
   });
 });
 
@@ -526,7 +499,7 @@ function compute(){
   // Methode B
   let B = null;
   if (S.menge > 0) {
-    B = heizlastB({ gebaeudetyp:S.gebaeudetyp, baujahr:S.baujahr, brennstoff:S.brennstoff, menge:S.menge, wwSeparat:S.wwSeparat });
+    B = heizlastB({ gebaeudetyp:S.gebaeudetyp, baujahr:S.baujahr, brennstoff:S.brennstoff, menge:S.menge });
   }
   return { A, B };
 }
