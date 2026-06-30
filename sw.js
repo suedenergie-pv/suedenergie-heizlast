@@ -1,6 +1,9 @@
 /* SüdEnergie Heizlastrechner – einfacher Offline-Cache */
-const CACHE = 'heizlast-v1';
-const ASSETS = ['./', './index.html', './manifest.json', './suedenergie-logo.png'];
+const CACHE = 'heizlast-v2';
+const ASSETS = [
+  './', './index.html', './manifest.json', './suedenergie-logo.png',
+  './assets/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
