@@ -1,5 +1,5 @@
 /* SüdEnergie Heizlastrechner – einfacher Offline-Cache */
-const CACHE = 'heizlast-v4';
+const CACHE = 'heizlast-v5';
 const ASSETS = [
   './', './index.html', './manifest.json', './suedenergie-logo.png',
   './assets/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
