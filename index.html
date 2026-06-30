@@ -39,6 +39,16 @@ header{
 }
 header img{height:44px;width:auto}
 header .ttl{margin-left:auto;text-align:right}
+.install-btn{
+  display:none;align-items:center;gap:.4rem;
+  font:inherit;font-size:.82rem;font-weight:700;
+  min-height:40px;padding:.45rem .85rem;
+  border:1.5px solid var(--orange);border-radius:10px;
+  background:var(--orange-l);color:var(--orange-d);
+  cursor:pointer;white-space:nowrap;transition:background .12s;
+}
+.install-btn:hover{background:var(--orange-m)}
+.install-btn.show{display:inline-flex}
 header .ttl h1{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
 header .ttl p{font-size:.8rem;color:var(--muted)}
 .brand-fallback{
@@ -203,6 +213,10 @@ input:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 
 
   <header>
     <img src="suedenergie-logo.png" alt="SüdEnergie" onerror="this.outerHTML='<div class=brand-fallback>SüdEnergie</div>'">
+    <button type="button" id="installBtn" class="install-btn" aria-label="App installieren">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+      App installieren
+    </button>
     <div class="ttl">
       <h1>Heizlastrechner</h1>
       <p>Überschlägige Ermittlung · 2 Methoden</p>
@@ -553,6 +567,27 @@ function render(){
 }
 
 render();
+
+/* ===================== Installieren-Button (nur im Browser) ===================== */
+(function(){
+  const btn = document.getElementById('installBtn');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  let deferred = null;
+  if (isStandalone) return;   // läuft bereits als installierte App → kein Button
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault();
+    deferred = e;
+    btn.classList.add('show');
+  });
+  btn.addEventListener('click', async ()=>{
+    if (!deferred) return;
+    deferred.prompt();
+    await deferred.userChoice;
+    deferred = null;
+    btn.classList.remove('show');
+  });
+  window.addEventListener('appinstalled', ()=>{ deferred = null; btn.classList.remove('show'); });
+})();
 
 /* ===================== PWA ===================== */
 if ('serviceWorker' in navigator) {
